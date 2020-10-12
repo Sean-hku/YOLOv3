@@ -21,7 +21,7 @@ all_prune_params = [(10, 0.95, 0.01), (15, 0.95, 0.01)] 10/15:shortcut layer num
 ```
 ## Finetune
 `python auto_finetune.py`<br>
-Before finetune, you should modify cfg/config.py <br>
+ Before finetune, you should modify cfg/config.py <br>
 ```
 finetune_folders = [
     os.path.join('prune_result/gray26_s{}E-4-last'.format(j), i)

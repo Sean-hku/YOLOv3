@@ -2,7 +2,7 @@
 ## Baseline training<br>
 **Parse csv files:** `python csv2cmd.py` then you will get cmd.txt<br>
 **Assign cmds to GPU:** `python customized_cmd.py` then you will get training cmds<br>
-**start training:** `python train.py --cfg --weights`
+**Start training:** `python train.py --cfg --weights`
 ## Baseline testing<br>
 **Auto_testing** `python auto_testing.py` you need a csv file and weight folder
 ## Sparse training <br>

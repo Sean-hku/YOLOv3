@@ -3,13 +3,14 @@
 **Parse csv files:** `python csv2cmd.py` then you will get cmd.txt<br>
 **Assign cmds to GPU:** `python customized_cmd.py` then you will get training cmds<br>
 **start training:** `python train.py --cfg --weights`
-
+## Baseline testing<br>
+**Auto_testing** `python auto_testing.py` you need a csv file and weight folder
 ## Sparse training <br>
 **strat sparse training** `python train_sparse.py --cfg cfg/my_cfg.cfg --data data/my_data.data --weights weights/last.weights --epochs 300 --batch-size 32 -sr --s 0.001 --prune 1`<br>
 ## Test sparse ratio
 `python auto_sparse.py` you will get a csv about bn_weight and sparse rate<br>
 ## Pruning
-**two methods** **1. Slim_prune** `prune/slim_prune.py` **2. Layer_channel_prune** `prune/layer_channel_prune.py` or you can also run `auto_pruning.py` if you want both pruning methods.<br>
+**Two methods** **1. Slim_prune** `prune/slim_prune.py` **2. Layer_channel_prune** `prune/layer_channel_prune.py` or you can also run `auto_pruning.py` if you want both pruning methods.<br>
 Before pruning, you should modify cfg/config.py <br>
 ```python
 models = {

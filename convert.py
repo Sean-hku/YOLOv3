@@ -13,7 +13,7 @@ def convert_onnx(img_size, model):
 def load_model(cfg, img_size, weights):
     model = Darknet(cfg, img_size)
     if weights.endswith('.pt'):  # pytorch format
-        model.load_state_dict(torch.load(weights, map_location=device)['model'])
+        model.load_state_dict(torch.load(weights, map_location='cuda:0')['model'])
     else:  # darknet format
         _ = load_darknet_weights(model, weights)
     return model

@@ -1,13 +1,11 @@
-from models import *
-from utils.utils import *
-# from prune.util import obtain_avg_forward_time
-from test import test
-from terminaltables import AsciiTable
-import time
-from utils.prune_utils import *
-import argparse
-from utils.compute_flops import print_model_param_nums, print_model_param_flops
 import csv
+from models import *
+from test import test
+from utils.compute_flops import print_model_param_nums, print_model_param_flops
+from utils.opt import opt
+from utils.prune_utils import *
+from utils.utils import *
+
 
 def obtain_avg_forward_time(input, model, repeat=200):
     model.eval()
@@ -37,18 +35,18 @@ def write_info(m, metric, string):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--cfg', type=str, default='cfg/yolov3-1cls.cfg', help='cfg file path')
-    parser.add_argument('--data', type=str, default='data/swim_gray/gray.data', help='*.data file path')
-    parser.add_argument('--weights', type=str, default='weights/last.pt', help='sparse model weights')
-    parser.add_argument('--shortcuts', type=int, default=8, help='how many shortcut layers will be pruned,\
-        pruning one shortcut will also prune two CBL,yolov3 has 23 shortcuts')
-    parser.add_argument('--global_percent', type=float, default=0.6, help='global channel prune percent')
-    parser.add_argument('--layer_keep', type=float, default=0.01, help='channel keep percent per layer')
-    parser.add_argument('--img_size', type=int, default=416, help='inference size (pixels)')
-    parser.add_argument('--only_metric', type=bool, default=False, help="whether save cfg and model")
-    opt = parser.parse_args()
-    print(opt)
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--cfg', type=str, default='cfg/yolov3-1cls.cfg', help='cfg file path')
+    # parser.add_argument('--data', type=str, default='data/swim_gray/gray.data', help='*.data file path')
+    # parser.add_argument('--weights', type=str, default='weights/last.pt', help='sparse model weights')
+    # parser.add_argument('--shortcuts', type=int, default=8, help='how many shortcut layers will be pruned,\
+    #     pruning one shortcut will also prune two CBL,yolov3 has 23 shortcuts')
+    # parser.add_argument('--global_percent', type=float, default=0.6, help='global channel prune percent')
+    # parser.add_argument('--layer_keep', type=float, default=0.01, help='channel keep percent per layer')
+    # parser.add_argument('--img_size', type=int, default=416, help='inference size (pixels)')
+    # parser.add_argument('--only_metric', type=bool, default=False, help="whether save cfg and model")
+    # opt = parser.parse_args()
+    # print(opt)
 
     only_metric = opt.only_metric
     img_size = opt.img_size

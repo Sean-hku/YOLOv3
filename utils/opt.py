@@ -43,6 +43,13 @@ parser.add_argument('--id', type=int, default=000, help='inference size (pixels)
 parser.add_argument('--csv_path', type=str, default='', help='path to weights file')
 parser.add_argument('--write_csv', action='store_true', help='save test csv file')
 
+'----------------------------------slim-prune-------------------------------------'
+parser.add_argument('--global_percent', type=float, default=0.8, help='global channel prune percent')
+parser.add_argument('--layer_keep', type=float, default=0.01, help='channel keep percent per layer')
+parser.add_argument('--only_metric', type=bool, default=False, help="whether save cfg and model")
+'----------------------------------all-prune-------------------------------------'
+parser.add_argument('--shortcuts', type=int, default=8, help='how many shortcut layers will be pruned,\
+    pruning one shortcut will also prune two CBL,yolov3 has 23 shortcuts')
 opt = parser.parse_args()
 
 print(opt)

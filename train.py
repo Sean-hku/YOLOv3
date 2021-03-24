@@ -1,32 +1,23 @@
 import csv
+
 import torch.distributed as dist
 from torch.utils.tensorboard import SummaryWriter
+
 import test  # import test.py to get mAP after each epoch
 from models import *
-from torch import optim
 from utils.compute_flops import print_para_time_flops
 from utils.datasets import *
 from utils.opt import opt
 from utils.prune_utils import *
+from utils.sparse import BNSparse
+from utils.train_utils import Optimizer, LR_Scheduler
 from utils.utils import *
-from utils.train_utils import Optimizer, Scheduler
 
 mixed_precision = config.mixed_precision
 try:  # Mixed precision training https://github.com/NVIDIA/apex
     from apex import amp
 except:
     mixed_precision = False  # not installed
-
-# os.environ["CUDA_VISIBLE_DEVICES"] = "2"
-titles = ['GIoU', 'Objectness', 'Classification', 'Train loss',
-          'Precision', 'Recall', 'mAP', 'F1', 'val GIoU', 'val Objectness', 'val Classification', 'soft_loss']
-
-# Overwrite hyp with hyp*`.txt (optional)
-f = glob.glob('hyp*.txt')
-if f:
-    for k, v in zip(config.hyp.keys(), np.loadtxt(f[0])):
-        config.hyp[k] = v
-
 
 class Trainer:
     def __init__(self):
@@ -39,7 +30,7 @@ class Trainer:
         self.accumulate = opt.accumulate
         self.multi_scale = opt.multi_scale
         self.cur_epoch = 0
-        self.lr = 0
+        self.sparse = opt.sr
         self.best_result = [float("inf"), float("inf"), 0, float("inf"), 0, 0, 0, 0, float("inf"), float("inf"), 0,float("inf")]
         self.train_loss_ls, self.val_loss_ls, self.prmf_ls = [], [], []
         self.best_epoch = 0
@@ -50,7 +41,10 @@ class Trainer:
         self.write_txt_title()
         self.cal_img_size()
         self.Optimizer = Optimizer()
-        self.Scheduler = Scheduler()
+        self.LR_Scheduler = LR_Scheduler()
+        if self.sparse:
+            self.BNsp = BNSparse(self.bn_file)
+
 
     def cal_img_size(self):
         if self.multi_scale:
@@ -59,11 +53,19 @@ class Trainer:
             self.img_size = self.img_sz_max * 32  # initiate with maximum multi_scale size
             print('Using multi-scale %g - %g' % (self.img_sz_min * 32, self.img_size))
 
+    def init_scheduler(self):
+        lr_schedule = {'name': 'CosineAnnealingLR', 'T_max': opt.epochs, 'eta_min': 0.00001}
+        # schedule_cfg = lr_schedule
+        name = lr_schedule.pop('name')
+        Scheduler = getattr(torch.optim.lr_scheduler, name)
+        self.lr_scheduler = Scheduler(optimizer=self.optimizer, **lr_schedule)
+
     def build_dir(self):
         # i.e ./gray/spp/1(./opt.expFolder/opt.type/opt.expID)
         self.result_dir = os.path.join(opt.expFolder, opt.expID)
         self.train_dir = os.path.join('result', self.result_dir) + os.sep  # train result dir
         self.weight_dir = os.path.join('weights', self.result_dir) + os.sep  # weights dir
+        self.bn_file = os.path.join(self.train_dir, 'bn.txt')
         if "last" not in self.weights or not opt.resume:
             if 'test' not in self.weight_dir or not os.path.exists(self.weight_dir):
                 os.makedirs(self.weight_dir)
@@ -152,9 +154,9 @@ class Trainer:
                                       augment=True,
                                       hyp=config.hyp,  # augmentation hyperparameters
                                       rect=opt.rect,  # rectangular training
-                                      image_weights=opt.img_weights,
+                                      image_weights=False,
                                       cache_labels=True if self.epochs > 10 else False,
-                                      cache_images=False if opt.prebias else opt.cache_images)
+                                      cache_images=False)
 
         # Dataloader
         self.dataloader = torch.utils.data.DataLoader(self.dataset,
@@ -200,12 +202,11 @@ class Trainer:
     def write_tensorboard(self, results, msoft_target, *mloss):
         if self.tb_writer:
             x = list(mloss) + list(results) + [msoft_target]
-            for xi, title in zip(x, titles):
+            for xi, title in zip(x, config.titles):
                 self.tb_writer.add_scalar(title, xi, self.cur_epoch)
             self.tb_writer.add_scalar('lr', self.lr, self.cur_epoch)
             self.best_result = update_result(self.best_result, x)
-            # self.tb_writer.add_image("result of epoch {}".format(self.cur_epoch), cv2.imread("tmp.jpg")[:, :, ::-1],
-            #                          dataformats='HWC')
+
 
     def write_whole_csv(self, train_time, final_epoch):
         whole_result = os.path.join('result', opt.expFolder, "{}_result_{}.csv".format(opt.expFolder, config.computer))
@@ -270,25 +271,26 @@ class Trainer:
 
         # Initialize model
         self.build_model()
-
+        if self.sparse:
+            self.BNsp.build_sparse(self.model)
         # Optimizer
         self.optimizer = self.Optimizer.build(self.model)
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=opt.epochs)
         # Mixed precision training https://github.com/NVIDIA/apex
         if mixed_precision:
             self.model, self.optimizer = amp.initialize(self.model, self.optimizer, opt_level='O1', verbosity=1)
-
+        self.init_scheduler()
         # Dataset and dataloader
         self.build_dataloader()
-
+        #write bn tensorboard
+        if self.sparse:
+            self.BNsp.write_tensorboard(self.model, self.tb_writer)
         # Start training
         nb = len(self.dataloader)
         results = (0, 0, 0, 0, 0, 0, 0)  # 'P', 'R', 'mAP', 'F1', 'val GIoU', 'val Objectness', 'val Classification'
         t0 = time.time()
-        print('Starting %s for %g epochs...' % ('prebias' if opt.prebias else 'training', self.epochs))
+        print('Starting %s for %g epochs...' % ('training', self.epochs))
         final_epoch = 0
-        x = []
-        y = []
+        x, y = [], []
         # epoch ------------------------------------------------------------------
         for self.cur_epoch in range(self.start_epoch,self.epochs):
             self.model.train()
@@ -301,9 +303,10 @@ class Trainer:
             for i, (imgs, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
                 ni = i + nb * self.cur_epoch# number integrated batches (since train start)
                 x.append(ni)
-                y.append(self.lr)
+                y.append(self.optimizer.param_groups[0]['lr'])
+                self.lr = self.optimizer.param_groups[0]['lr']
                 if self.cur_epoch < config.warm_up:
-                    self.lr = self.Scheduler.warmup_schl(self.optimizer, ni, nb)
+                    self.lr = self.LR_Scheduler.warmup_schl(self.optimizer, ni, nb)
                 imgs = imgs.to(device)
                 targets = targets.to(device)
                 # Multi-Scale training
@@ -342,6 +345,10 @@ class Trainer:
                 else:
                     loss.backward()
 
+                #update BN weights
+                if self.sparse:
+                    self.BNsp.update_BN(self.model)
+
                 # Accumulate gradient for x batches before optimizing
                 if ni % self.accumulate == 0:
                     self.optimizer.step()  # 更新梯度
@@ -355,7 +362,6 @@ class Trainer:
                     '%g/%g' % (self.cur_epoch, self.epochs - 1), '%.3gG' % mem, *mloss, msoft_target, reg_ratio,
                     len(targets), self.img_size, self.lr)
                 pbar.set_description(s)
-
                 # end batch ------------------------------------------------------------------------------------------------
 
             # Process epoch results
@@ -369,8 +375,7 @@ class Trainer:
                                           model=self.model,
                                           conf_thres=0.001 if final_epoch and self.cur_epoch > 0 else 0.1,
                                           # 0.1 for speed
-                                          save_json=final_epoch and self.cur_epoch > 0 and 'coco.data' in self.data,
-                                          writer=self.tb_writer, )
+                                          save_json=final_epoch and self.cur_epoch > 0 and 'coco.data' in self.data,)
 
             # Write epoch results
             self.write_txt_result(results, s)
@@ -384,16 +389,18 @@ class Trainer:
             # Update best mAP
             self.update_map(results)
 
-            # Early stoping for Giou(Schuler)
-            self.optimizer, self.lr= self.Scheduler.normal_scl(self.cur_epoch, self.optimizer,scheduler)
-            # print(self.lr)
+            # update optimizer
+            self.lr_scheduler.step()
 
             # Save training results
             self.save_model(final_epoch)
+
+            #write bn txt
+            if self.sparse:
+                self.BNsp.write_txt(self.model, self.tb_writer, self.cur_epoch)
+
             # draw lr graph
-            if self.cur_epoch > 10:
-                print('x',x)
-                print('y',y)
+            if self.cur_epoch > opt.epochs - 2:
                 plt.figure(figsize=(10, 8), dpi=200)
                 plt.xlabel('batch stop')
                 plt.ylabel('learning rate')
@@ -409,7 +416,9 @@ class Trainer:
         # draw graph
         draw_graph(self.cur_epoch - self.start_epoch + 1, self.train_loss_ls, self.val_loss_ls, self.prmf_ls,
                    self.train_dir)
-
+        #write pruning bn tensorboard
+        if self.sparse:
+            self.BNsp.write_tensorboard_after(self.model, self.tb_writer)
         self.write_whole_csv(train_time, final_epoch)
 
         plot_results(self.train_dir)  # save as results.png

@@ -1,13 +1,8 @@
-from models import *
-from utils.utils import *
-import numpy as np
-from copy import deepcopy
-from test import test
-from terminaltables import AsciiTable
-import time
-from utils.prune_utils import *
 import argparse
 
+from models import *
+from utils.prune_utils import *
+from utils.utils import *
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -21,12 +16,12 @@ if __name__ == '__main__':
     print(opt)
 
     per_min, per_max = opt.percent_min, opt.percent_max
-    # sparse_file_path = os.path.join("/".join(opt.weights.split("/")[:-2]), "sparse_result.csv")
-    # if_exist = os.path.exists(sparse_file_path)
-    # sparse_file = open(sparse_file_path, "a+")
-    # if not if_exist:
-    #     title = "Model_name,"+",".join(map(lambda x: str(x), range(per_min, per_max+1)))
-        # sparse_file.write(title+"\n")
+    sparse_file_path = os.path.join("/".join(opt.weights.split("/")[:-2]), "sparse_result.csv")
+    if_exist = os.path.exists(sparse_file_path)
+    sparse_file = open(sparse_file_path, "a+")
+    if not if_exist:
+        title = "Model_name,"+",".join(map(lambda x: str(x), range(per_min, per_max+1)))
+        sparse_file.write(title+"\n")
 
     if opt.weights.endswith(".pt"):
         model_name = opt.weights.split("/")[-1][:-3]

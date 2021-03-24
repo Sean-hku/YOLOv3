@@ -7,14 +7,10 @@ from utils.utils import *
 
 
 def detect(save_txt=False, save_img=True):
-    img_size = (320, 192) if ONNX_EXPORT else opt.img_size  # (320, 192) or (416, 256) or (608, 352) for (height, width)
+    img_size = opt.img_size  # (320, 192) or (416, 256) or (608, 352) for (height, width)
     out, source, weights, half, view_img = opt.output, opt.source, opt.weights, opt.half, opt.view_img
     webcam = source == '0' or source.startswith('rtsp') or source.startswith('http') or source.endswith('.txt')
-    # Initialize
     device = torch_utils.select_device(device='cpu' if ONNX_EXPORT else opt.device)
-    # if os.path.exists(out):
-    #     shutil.rmtree(out)  # delete output folder
-    # os.makedirs(out)  # make new output folder
 
     # Initialize model
     model = Darknet(opt.cfg, img_size)
@@ -26,17 +22,8 @@ def detect(save_txt=False, save_img=True):
     else:  # darknet format
         _ = load_darknet_weights(model, weights)
 
-    # Fuse Conv2d + BatchNorm2d layers
-    # model.fuse()
-
     # Eval mode
     model.to(device).eval()
-
-    # Export mode
-    if ONNX_EXPORT:
-        img = torch.zeros((1, 3) + img_size)  # (1, 3, 320, 192)
-        torch.onnx.export(model, img, 'weights/export.onnx', verbose=True,opset_version=11)
-        return
 
     # Half precision
     half = half and device.type != 'cpu'  # half precision only supported on CUDA
@@ -62,36 +49,10 @@ def detect(save_txt=False, save_img=True):
     for path, img, im0s, vid_cap in dataset:
 
         t = time.time()
-
-        # Get detections
-
         img = torch.from_numpy(img).to(device)
         if img.ndimension() == 3:
             img = img.unsqueeze(0)
-
         pred, _ = model(img)
-
-        # yolo_feature = model.yolofeature.cpu().numpy()
-        # yolo_feature = yolo_feature[0, :, :, :]
-        # size = yolo_feature.shape[0]
-        # for i in range(size):  # 可视化了32通道
-        #     ax = plt.subplot(8, size/8, i + 1)
-            # ax.set_title('Feature {}'.format(i))
-            # ax.axis('off')
-            # ax.set_title('new—conv1-image')
-
-        # plt.imshow(yolo_feature[:, :, :].sum(axis = 0), cmap='jet')
-        # plt.show()
-
-        ONNX=False
-        if ONNX:
-            import onnxruntime as ort
-            img = img.cpu().numpy()
-            ort_session = ort.InferenceSession('/media/hkuit164/WD20EJRX/yolov3-channel-and-layer-pruning/weights/export.onnx')
-            obj,boxes = ort_session.run(None, {'input.1': img})
-            boxes = boxes*416
-            pred_onnx=torch.cat((torch.from_numpy(boxes),torch.from_numpy(obj),torch.ones([obj.shape[0],1])),1)
-            pred_onnx = pred_onnx[np.newaxis, :]
 
         if opt.half:
             pred = pred.float()
@@ -125,8 +86,6 @@ def detect(save_txt=False, save_img=True):
                         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)])
 
             print('%sDone. (%.3fs)' % (s, time.time() - t))
-            cv2.imshow(p, im0)
-            cv2.waitKey(1)
             # Stream results
             if view_img:
                 cv2.imshow(p, im0)
@@ -158,10 +117,10 @@ def detect(save_txt=False, save_img=True):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cfg', type=str, default='cfg/yolov3-spp.cfg', help='cfg file path')
-    parser.add_argument('--data', type=str, default='data/coco.data', help='coco.data file path')
-    parser.add_argument('--weights', type=str, default='weights/yolov3-spp.weights', help='path to weights file')
-    parser.add_argument('--source', type=str, default='data/samples', help='source')  # input file/folder, 0 for webcam
+    parser.add_argument('--cfg', type=str, default='cfg/yolov3-original-1cls-leaky.cfg', help='cfg file path')
+    parser.add_argument('--data', type=str, default='data/ceiling/ceiling.data', help='coco.data file path')
+    parser.add_argument('--weights', type=str, default='weights/best.weight', help='path to weights file')
+    parser.add_argument('--source', type=str, default='0619050.mp4', help='source')  # input file/folder, 0 for webcam
     parser.add_argument('--output', type=str, default='output', help='output folder')  # output folder
     parser.add_argument('--img-size', type=int, default=416, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.5, help='object confidence threshold')
@@ -169,7 +128,7 @@ if __name__ == '__main__':
     parser.add_argument('--fourcc', type=str, default='mp4v', help='output video codec (verify ffmpeg support)')
     parser.add_argument('--half', action='store_true', help='half precision FP16 inference')
     parser.add_argument('--device', default='', help='device id (i.e. 0 or 0,1) or cpu')
-    parser.add_argument('--view-img', action='store_true', help='display results')
+    parser.add_argument('--view-img', default=True,action='store_true', help='display results')
     opt = parser.parse_args()
     print(opt)
 

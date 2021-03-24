@@ -24,7 +24,8 @@ class Optimizer():
         del pg0, pg1
         return optimizer
 
-class Scheduler:
+
+class LR_Scheduler:
     def __init__(self):
         self.patience = 7
         self.warm_up = 6
@@ -33,6 +34,12 @@ class Scheduler:
         self.decay = 0
         self.stop = False
         self.lr_decay_dict = [0.7,0.9]
+
+    def init_scheduler(self):
+        schedule_cfg = config.lr_schedule.values()
+        name = config.lr_schedule['name']
+        Scheduler = getattr(torch.optim.lr_scheduler, name)
+        self.lr_scheduler = Scheduler(optimizer=self.optimizer, **schedule_cfg)
 
     def update(self, epoch, optimizer, iteration, epoch_size):
         if epoch < self.warm_up:

@@ -1,13 +1,8 @@
-from models import *
-from utils.utils import *
-import numpy as np
-from copy import deepcopy
-from test import test
-from terminaltables import AsciiTable
-import time
-from utils.prune_utils import *
 import argparse
 
+from models import *
+from utils.prune_utils import *
+from utils.utils import *
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

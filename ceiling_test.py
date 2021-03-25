@@ -1,10 +1,9 @@
-import pandas as pd
-import os
-import argparse
-from models import *
 import traceback
-from test import test
-import csv
+
+import pandas as pd
+
+from models import *
+
 path = '/media/hkuit164/MB155_3/result/ceiling/ceiling_result_sean.csv'
 weight_folder='/media/hkuit164/MB155_4/ceiling'
 data_folder = '/media/hkuit164/WD20EJRX/yolov3-channel-and-layer-pruning/data/test/'

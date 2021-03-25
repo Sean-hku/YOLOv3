@@ -1,7 +1,7 @@
+import os
+
 from prune.config import data, batch_size, epoch, ms
 from prune.config import finetune_folders as folders
-import shutil
-import os
 
 cmds = []
 for folder in folders:

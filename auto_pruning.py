@@ -1,6 +1,7 @@
 import os
+
 from prune.config import data, models, only_metric
-from prune.config import prune, shortcut_p, slim_params, layer_num, all_prune_params
+from prune.config import slim_params, all_prune_params
 
 cmds = []
 prune_folder = models

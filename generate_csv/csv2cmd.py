@@ -56,14 +56,14 @@ class Generate_csv():
             lines = [line for line in f.readlines() if line != "\n"]
 
         train_begin, train_end = 24, 24
-        CUDA = str(cuda)
+        CUDA = cuda
         target_cmds = lines[:]
 
-        if CUDA != -1:
-            cmds = [cmd[:22] + str(CUDA) + cmd[22:-1] + ",\n" for cmd in target_cmds]
-        else:
-            cmds = [cmd[0] + cmd[23:-1] + ",\n" for cmd in target_cmds]
-
+        # if CUDA != -1:
+        #     cmds = [cmd[:22] + str(CUDA) + cmd[22:-1] + ",\n" for cmd in target_cmds]
+        # else:
+        #     cmds = [cmd[0] + cmd[23:-1] + ",\n" for cmd in target_cmds]
+        cmds = [cmd[:22] + cmd[22:-1] + ",\n" for cmd in target_cmds]
         with open("{}/cmds.txt".format(os.path.join(task_folder, batch_folder)), "a+") as cf:
             for cmd in cmds:
                 cf.write(cmd)

@@ -2,10 +2,8 @@
 
 cmds = [
 
-'python train.py --type original --activation leaky --batch-size 8 --freeze False --prune 1 --epochs 100 --LR 0.00025 --optimize sgd --weights weights/rgb.weights --save_interval 10 --multi-scale True --img_size 416 --rect False --data data/rgb/rgb.data --sr True --s 0.01 --expFolder rgb	--expID 1',
-'python train.py --type original --activation leaky --batch-size 8 --freeze False --prune 1 --epochs 100 --LR 0.00025 --optimize sgd --weights weights/rgb.weights --save_interval 10 --multi-scale True --img_size 416 --rect False --data data/rgb/rgb.data --sr True --s 0.05 --expFolder rgb	--expID 2',
-'python train.py --type original --activation leaky --batch-size 8 --freeze False --prune 1 --epochs 100 --LR 0.00025 --optimize adam --weights weights/rgb.weights --save_interval 10 --multi-scale True --img_size 416 --rect False --data data/rgb/rgb.data --sr True --s 0.005 --expFolder rgb	--expID 3',
-
+# 'python train.py --type original --activation leaky --batch-size 8 --freeze False --prune 1 --epochs 10 --LR 0.00025 --optimize sgd --weights weights/rgb.weights --save_interval 10 --multi-scale True --img_size 416 --rect False --data data/fish/fish.data --sr True --s 0.05 --lr_schedule step --expFolder rgb	--expID 101',
+'python train.py --type original --activation leaky --batch-size 8 --freeze False --prune 1 --epochs 10 --LR 0.00025 --optimize adam --weights weights/rgb.weights --save_interval 10 --multi-scale True --img_size 416 --rect False --data data/fish/fish.data --sr True --s 0.005 --lr_schedule cosin --expFolder rgb	--expID 22',
 
 ]
 

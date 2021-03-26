@@ -31,7 +31,7 @@ parser.add_argument('--activation', type=str, default='leaky', help='activation 
 parser.add_argument('--expFolder', type=str, default='gray', help='expFloder')
 parser.add_argument('--save_interval', default=1, type=int, help='interval')
 parser.add_argument('--optimize', type=str, default='sgd', help='optimizer(adam,sgd)')
-
+parser.add_argument('--lr_schedule', type=str, default='cosin', help='lr_schedule: step or cosin')
 
 '--------------------------------------testing------------------------------------'
 

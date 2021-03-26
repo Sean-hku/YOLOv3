@@ -40,3 +40,8 @@ class BNSparse():
             f.write("Epoch--->{}, bn_ave--->{}, bn_var--->{}\n".
                     format(epoch, str(np.mean(bn_numpy)), str(np.var(bn_numpy))))
         tb_writer.add_histogram('bn_weights/hist', bn_numpy, epoch, bins='doane')
+
+    def draw_bn(self, model,):
+        bn_weights = gather_bn_weights(model.module_list, self.prune_idx)
+        bn_numpy = bn_weights.numpy()
+        return np.mean(bn_numpy)

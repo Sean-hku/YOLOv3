@@ -54,7 +54,10 @@ class Trainer:
             print('Using multi-scale %g - %g' % (self.img_sz_min * 32, self.img_size))
 
     def init_scheduler(self):
-        lr_schedule = {'name': 'CosineAnnealingLR', 'T_max': opt.epochs, 'eta_min': 0.00001}
+        if opt.lr_schedule == 'cosin':
+            lr_schedule = {'name': 'CosineAnnealingLR', 'T_max': opt.epochs, 'eta_min': 0.00001}
+        elif opt.lr_schedule == 'step':
+            lr_schedule = {'name': 'MultiStepLR', 'milestones': [0.7*opt.epochs,0.9*opt.epochs], 'gamma': 0.1}
         # schedule_cfg = lr_schedule
         name = lr_schedule.pop('name')
         Scheduler = getattr(torch.optim.lr_scheduler, name)
@@ -286,11 +289,12 @@ class Trainer:
             self.BNsp.write_tensorboard(self.model, self.tb_writer)
         # Start training
         nb = len(self.dataloader)
+        print('nb',nb)
         results = (0, 0, 0, 0, 0, 0, 0)  # 'P', 'R', 'mAP', 'F1', 'val GIoU', 'val Objectness', 'val Classification'
         t0 = time.time()
         print('Starting %s for %g epochs...' % ('training', self.epochs))
         final_epoch = 0
-        x, y = [], []
+        x, y, b_weight= [], [], []
         # epoch ------------------------------------------------------------------
         for self.cur_epoch in range(self.start_epoch,self.epochs):
             self.model.train()
@@ -303,8 +307,8 @@ class Trainer:
             for i, (imgs, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
                 ni = i + nb * self.cur_epoch# number integrated batches (since train start)
                 x.append(ni)
-                y.append(self.optimizer.param_groups[0]['lr'])
-                self.lr = self.optimizer.param_groups[0]['lr']
+                y.append(self.optimizer.param_groups[0]['lr']*100)
+                # self.lr = self.optimizer.param_groups[0]['lr']
                 if self.cur_epoch < config.warm_up:
                     self.lr = self.LR_Scheduler.warmup_schl(self.optimizer, ni, nb)
                 imgs = imgs.to(device)
@@ -348,7 +352,8 @@ class Trainer:
                 #update BN weights
                 if self.sparse:
                     self.BNsp.update_BN(self.model)
-
+                bn_weight = self.BNsp.draw_bn(self.model)
+                b_weight.append(bn_weight)
                 # Accumulate gradient for x batches before optimizing
                 if ni % self.accumulate == 0:
                     self.optimizer.step()  # 更新梯度
@@ -401,10 +406,13 @@ class Trainer:
 
             # draw lr graph
             if self.cur_epoch > opt.epochs - 2:
+                # print(x)
+                # print(y)
                 plt.figure(figsize=(10, 8), dpi=200)
                 plt.xlabel('batch stop')
                 plt.ylabel('learning rate')
-                plt.plot(x, y, color='r', linewidth=2.0, label='modify data')
+                plt.plot(x, y, color='r', linewidth=2.0, label='lr')
+                plt.plot(x, b_weight,label='sparse')
                 plt.legend(loc='upper right')
                 plt.savefig('result.png')
                 plt.show()

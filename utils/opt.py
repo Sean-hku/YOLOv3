@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser(prog='train.py')
 parser.add_argument('--epochs', type=int, default=273)  # 500200 batches at bs 16, 117263 images = 273 epochs
 parser.add_argument('--batch-size', type=int, default=16)  # effective bs = batch_size * accumulate = 16 * 4 = 64
 parser.add_argument('--accumulate', type=int, default=2, help='batches to accumulate before optimizing')
-parser.add_argument('--cfg', type=str, default='cfg/yolov3-spp-1cls-leaky.cfg', help='cfg file path')
+parser.add_argument('--cfg', type=str, default='cfg/yolov3-original-1cls-leaky.cfg', help='cfg file path')
 parser.add_argument('--t_cfg', type=str, default='', help='teacher model cfg file path for knowledge distillation')
 parser.add_argument('--data', type=str, default='data/coco.data', help='*.data file path')
 parser.add_argument('--test_data', type=str, default='data/ceiling.data', help='*.data file path')
@@ -19,7 +19,6 @@ parser.add_argument('--weights', type=str, default='', help='initial weights')  
 parser.add_argument('--t_weights', type=str, default='', help='teacher model weights')
 parser.add_argument('--arc', type=str, default='default', help='yolo architecture')  # defaultpw, uCE, uBCE
 parser.add_argument('--device', default='', help='device id (i.e. 0 or 0,1) or cpu')
-parser.add_argument('--adam', action='store_true', help='use adam optimizer')
 parser.add_argument('--sr', action='store_true',help='train with channel sparsity regularization')
 parser.add_argument('--s', type=float, default=0.001, help='scale sparse rate')
 parser.add_argument('--prune', type=int, default=1, help='0:nomal prune 1:other prune ')
@@ -29,7 +28,7 @@ parser.add_argument('--LR', type=float, default=0.001, help='learning rate')
 parser.add_argument('--type', type=str, default='spp', help='yolo type(spp,normal,tiny)')
 parser.add_argument('--activation', type=str, default='leaky', help='activation function(leaky,swish,mish)')
 parser.add_argument('--expFolder', type=str, default='gray', help='expFloder')
-parser.add_argument('--save_interval', default=1, type=int, help='interval')
+parser.add_argument('--save_interval', default=10, type=int, help='interval')
 parser.add_argument('--optimize', type=str, default='sgd', help='optimizer(adam,sgd)')
 parser.add_argument('--lr_schedule', type=str, default='cosin', help='lr_schedule: step or cosin')
 
@@ -42,7 +41,7 @@ parser.add_argument('--save-json', action='store_true', help='save a cocoapi-com
 parser.add_argument('--id', type=int, default=000, help='inference size (pixels)')
 parser.add_argument('--csv_path', type=str, default='', help='path to weights file')
 parser.add_argument('--write_csv', action='store_true', help='save test csv file')
-
+parser.add_argument('--finetune', action='store_true', help='finetune')
 '----------------------------------slim-prune-------------------------------------'
 parser.add_argument('--global_percent', type=float, default=0.8, help='global channel prune percent')
 parser.add_argument('--layer_keep', type=float, default=0.01, help='channel keep percent per layer')

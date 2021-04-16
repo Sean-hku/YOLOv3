@@ -18,11 +18,14 @@ try:  # Mixed precision training https://github.com/NVIDIA/apex
     from apex import amp
 except:
     mixed_precision = False  # not installed
-
+# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 class Trainer:
     def __init__(self):
         self.weights = opt.weights
-        self.cfg = os.path.join('cfg', 'yolov3-' + opt.type + '-' + '1cls' + '-' + opt.activation + '.cfg')
+        if opt.finetune:
+            self.cfg = opt.cfg
+        else:
+            self.cfg = os.path.join('cfg', 'yolov3-' + opt.type + '-' + '1cls' + '-' + opt.activation + '.cfg')
         self.data = opt.data
         self.img_size = opt.img_size
         self.epochs = opt.epochs  # 500200 batches at bs 64, 117263 images = 273 epochs
@@ -55,8 +58,10 @@ class Trainer:
 
     def init_scheduler(self):
         if opt.lr_schedule == 'cosin':
+            print('Using cosin lr schedule')
             lr_schedule = {'name': 'CosineAnnealingLR', 'T_max': opt.epochs, 'eta_min': 0.00001}
         elif opt.lr_schedule == 'step':
+            print('Using step lr schedule')
             lr_schedule = {'name': 'MultiStepLR', 'milestones': [0.7*opt.epochs,0.9*opt.epochs], 'gamma': 0.1}
         # schedule_cfg = lr_schedule
         name = lr_schedule.pop('name')
@@ -67,7 +72,10 @@ class Trainer:
         # i.e ./gray/spp/1(./opt.expFolder/opt.type/opt.expID)
         self.result_dir = os.path.join(opt.expFolder, opt.expID)
         self.train_dir = os.path.join('result', self.result_dir) + os.sep  # train result dir
-        self.weight_dir = os.path.join('weights', self.result_dir) + os.sep  # weights dir
+        if opt.finetune:
+            self.weight_dir = os.path.join('finetune', opt.expFolder) + os.sep  # weights dir
+        else:
+            self.weight_dir = os.path.join('weights', self.result_dir) + os.sep  # weights dir
         self.bn_file = os.path.join(self.train_dir, 'bn.txt')
         if "last" not in self.weights or not opt.resume:
             if 'test' not in self.weight_dir or not os.path.exists(self.weight_dir):
@@ -171,13 +179,13 @@ class Trainer:
                                                  collate_fn=self.dataset.collate_fn)
 
     def update_map(self, results):
-        P = results[0]  # mAP
+        P, self.fitness= results[0], results[2]  # mAP
         if self.fitness > self.best_fitness and P > 0.5:
             self.best_fitness = self.fitness
             self.best_epoch = self.cur_epoch
 
     def write_txt_title(self):
-        with open(self.results_txt, 'a+') as file:
+        with open(self.results_txt, 'a') as file:
             file.write(('%10s' * 18) % (
                 'Epoch', 'gpu_mem', 'GIoU', 'obj', 'cls', 'total', 'soft', 'rratio', 'targets', 'img_size', 'lr',
                 "P", "R", "mAP", "F1", "test_GIoU", "test_obj", "test_cls\n"))
@@ -308,7 +316,7 @@ class Trainer:
                 ni = i + nb * self.cur_epoch# number integrated batches (since train start)
                 x.append(ni)
                 y.append(self.optimizer.param_groups[0]['lr']*100)
-                # self.lr = self.optimizer.param_groups[0]['lr']
+                self.lr = self.optimizer.param_groups[0]['lr']
                 if self.cur_epoch < config.warm_up:
                     self.lr = self.LR_Scheduler.warmup_schl(self.optimizer, ni, nb)
                 imgs = imgs.to(device)
@@ -352,8 +360,8 @@ class Trainer:
                 #update BN weights
                 if self.sparse:
                     self.BNsp.update_BN(self.model)
-                bn_weight = self.BNsp.draw_bn(self.model)
-                b_weight.append(bn_weight)
+                    bn_weight = self.BNsp.draw_bn(self.model)
+                    b_weight.append(bn_weight)
                 # Accumulate gradient for x batches before optimizing
                 if ni % self.accumulate == 0:
                     self.optimizer.step()  # 更新梯度
@@ -405,7 +413,7 @@ class Trainer:
                 self.BNsp.write_txt(self.model, self.tb_writer, self.cur_epoch)
 
             # draw lr graph
-            if self.cur_epoch > opt.epochs - 2:
+            if self.cur_epoch > opt.epochs - 2 and self.sparse:
                 # print(x)
                 # print(y)
                 plt.figure(figsize=(10, 8), dpi=200)
@@ -414,10 +422,26 @@ class Trainer:
                 plt.plot(x, y, color='r', linewidth=2.0, label='lr')
                 plt.plot(x, b_weight,label='sparse')
                 plt.legend(loc='upper right')
-                plt.savefig('result.png')
-                plt.show()
+                plt.savefig('{}/lr_sparse.png'.format(self.train_dir))
+                plt.cla()
+                # plt.show()
+            print(self.best_fitness)
             # end epoch ----------------------------------------------------------------------------------------------------
-
+        if opt.finetune:
+            csv_path = os.path.join("prune_result", opt.weights.split("/")[1])
+            exist = os.path.exists(os.path.join(csv_path, 'prune.csv'))
+            model_name = opt.weights.split('/')[-2] + '_finetune'
+            with open(os.path.join(csv_path, 'prune.csv'), 'a+') as f:
+                print(os.path.join(csv_path, 'prune.csv'))
+                f_csv = csv.writer(f)
+                if not exist:
+                    title = [
+                        'model', 'mAP', 'para', 'time'
+                    ]
+                    f_csv.writerow(title)
+                info_list = [model_name, self.best_fitness, '', '']
+                print('fitness',self.best_fitness)
+                f_csv.writerow(info_list)
         # end training
         train_time = (time.time() - t0) / 3600
         print('%g epochs completed in %.3f hours.\n' % (self.cur_epoch - self.start_epoch + 1, train_time))
@@ -427,9 +451,9 @@ class Trainer:
         #write pruning bn tensorboard
         if self.sparse:
             self.BNsp.write_tensorboard_after(self.model, self.tb_writer)
-        self.write_whole_csv(train_time, final_epoch)
-
-        plot_results(self.train_dir)  # save as results.png
+        if not opt.finetune:
+            self.write_whole_csv(train_time, final_epoch)
+            plot_results(self.train_dir)  # save as results.png
 
         dist.destroy_process_group() if torch.cuda.device_count() > 1 else None
         torch.cuda.empty_cache()

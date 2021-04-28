@@ -53,7 +53,7 @@ class LR_Scheduler:
         self.lr = 1e-6 + (config.hyp['lr0'] - 1e-6) * iteration / (epoch_size * 2)
         for param_group in optimizer.param_groups:
             param_group['lr'] = self.lr
-        return self.lr
+        return self.lr, optimizer
 
     def lr_decay(self, optimizer,epoch):
         epoch_rate = epoch / opt.epochs

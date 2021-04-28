@@ -288,6 +288,7 @@ class Trainer:
         self.optimizer = self.Optimizer.build(self.model)
         # Mixed precision training https://github.com/NVIDIA/apex
         if mixed_precision:
+            print('start mixed precision training')
             self.model, self.optimizer = amp.initialize(self.model, self.optimizer, opt_level='O1', verbosity=1)
         self.init_scheduler()
         # Dataset and dataloader
@@ -318,7 +319,7 @@ class Trainer:
                 y.append(self.optimizer.param_groups[0]['lr']*100)
                 self.lr = self.optimizer.param_groups[0]['lr']
                 if self.cur_epoch < config.warm_up:
-                    self.lr = self.LR_Scheduler.warmup_schl(self.optimizer, ni, nb)
+                    self.lr, self.optimizer= self.LR_Scheduler.warmup_schl(self.optimizer, ni, nb)
                 imgs = imgs.to(device)
                 targets = targets.to(device)
                 # Multi-Scale training

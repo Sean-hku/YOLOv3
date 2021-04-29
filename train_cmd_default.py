@@ -58,8 +58,8 @@ cmds = [
 
 
 
-# 'CUDA_VISIBLE_DEVICES=1 python train.py --type original --activation leaky --batch-size 8 --freeze False  --weights weights/darknet53.conv.74 --epochs 200 --LR 0.0025 --optimize adam  --save_interval 10 --multi-scale True --img_size 416 --rect False --data data/COCO/coco.data --lr_schedule cosin  --expFolder COCO	--expID 10lr_noapex'
-'CUDA_VISIBLE_DEVICES=0 python train.py --type original --activation leaky --batch-size 8 --freeze False  --weights weights/darknet53.conv.74 --epochs 200 --LR 0.0025 --optimize adam  --save_interval 10 --multi-scale True --img_size 416 --rect False --data data/COCO/coco.data --lr_schedule step  --expFolder COCO	--expID 10lr_noapex_step'
+# 'CUDA_VISIBLE_DEVICES=1 python train.py --type original --activation leaky --batch-size 16 --freeze False  --weights weights/darknet53.conv.74 --epochs 200 --LR 0.0025 --optimize adam  --save_interval 10 --multi-scale True --img_size 416 --rect False --data data/COCO/coco.data --lr_schedule cosin  --expFolder COCO	--expID 10lr_noapex',
+'CUDA_VISIBLE_DEVICES=2 python train.py --type original --activation leaky --batch-size 16 --freeze False  --weights weights/darknet53.conv.74 --epochs 200 --LR 0.0025 --optimize adam  --save_interval 10 --multi-scale True --img_size 416 --rect False --data data/COCO/coco.data --lr_schedule step  --expFolder COCO	--expID 10lr_noapex_step'
 
 ]
 

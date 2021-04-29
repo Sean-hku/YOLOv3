@@ -50,7 +50,7 @@ class LR_Scheduler:
             param_group['lr'] = lr
 
     def warmup_schl(self,optimizer, iteration, epoch_size):
-        self.lr = 1e-6 + (config.hyp['lr0'] - 1e-6) * iteration / (epoch_size * 2)
+        self.lr = 1e-6 + (config.hyp['lr0'] - 1e-6) * iteration / (epoch_size * config.warm_up)
         for param_group in optimizer.param_groups:
             param_group['lr'] = self.lr
         return self.lr, optimizer

@@ -1,8 +1,6 @@
 import csv
-
 import torch.distributed as dist
 from torch.utils.tensorboard import SummaryWriter
-
 import test  # import test.py to get mAP after each epoch
 from models import *
 from utils.compute_flops import print_para_time_flops
@@ -37,7 +35,6 @@ class Trainer:
         self.fitness = 0
         self.tb_writer = SummaryWriter('tensorboard/{}/{}'.format(opt.expFolder, opt.expID))
         self.build_dir()
-        # if the folder is not exist, create it
         self.write_txt_title()
         self.cal_img_size()
         self.Optimizer = Optimizer()
@@ -308,9 +305,9 @@ class Trainer:
                 ni = i + nb * self.cur_epoch# number integrated batches (since train start)
                 x.append(ni)
                 y.append(self.optimizer.param_groups[0]['lr']*100)
-                # self.lr = self.optimizer.param_groups[0]['lr']
+                self.lr= self.optimizer.param_groups[0]['lr']
                 if self.cur_epoch < config.warm_up:
-                    self.lr = self.LR_Scheduler.warmup_schl(self.optimizer, ni, nb)
+                    self.lr , self.optimizer= self.LR_Scheduler.warmup_schl(self.optimizer, ni, nb)
                 imgs = imgs.to(device)
                 targets = targets.to(device)
                 # Multi-Scale training
@@ -352,8 +349,8 @@ class Trainer:
                 #update BN weights
                 if self.sparse:
                     self.BNsp.update_BN(self.model)
-                bn_weight = self.BNsp.draw_bn(self.model)
-                b_weight.append(bn_weight)
+                    bn_weight = self.BNsp.draw_bn(self.model)
+                    b_weight.append(bn_weight)
                 # Accumulate gradient for x batches before optimizing
                 if ni % self.accumulate == 0:
                     self.optimizer.step()  # 更新梯度

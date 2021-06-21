@@ -125,16 +125,16 @@ class Yolo2Coco:
 
 
 if __name__ == "__main__":
-    label_pth = "data/rgb/txt"
-    imgs_pth = "data/rgb/JPEGImages"
-    saved_coco_pth = "/media/hkuit164/WD20EJRX/tensorflow-yolov3/data"
+    label_pth = "data/police/txt"
+    imgs_pth = "s"
+    saved_coco_pth = "data/coco"
     # make dir for coco
-    if not os.path.exists("%sswim_coco/annotations" % saved_coco_pth):
-        os.makedirs("%sswim_coco/annotations/" % saved_coco_pth)
-    if not os.path.exists("%sswim_coco/images/train2017/" % saved_coco_pth):
-        os.makedirs("%sswim_coco/images/train2017" % saved_coco_pth)
-    if not os.path.exists("%sswim_coco/images/val2017/" % saved_coco_pth):
-        os.makedirs("%sswim_coco/images/val2017" % saved_coco_pth)
+    if not os.path.exists("%s/annotations" % saved_coco_pth):
+        os.makedirs("%s/annotations/" % saved_coco_pth)
+    if not os.path.exists("%scoco/images/train2017/" % saved_coco_pth):
+        os.makedirs("%s/images/train2017" % saved_coco_pth)
+    if not os.path.exists("%s/images/val2017/" % saved_coco_pth):
+        os.makedirs("%s/images/val2017" % saved_coco_pth)
 
     # get all the labels
     label_ls = os.listdir(label_pth)
@@ -146,13 +146,13 @@ if __name__ == "__main__":
     # convert2coco for train set
     y2c_train = Yolo2Coco()
     train_instance = y2c_train.to_coco(train_ls, label_pth, imgs_pth)
-    y2c_train.save_coco_json(train_instance, '%sswim_coco/annotations/instances_train2017.json' % saved_coco_pth)
+    y2c_train.save_coco_json(train_instance, '%s/annotations/instances_train2017.json' % saved_coco_pth)
     for file in train_ls:
         shutil.copy(os.path.join(imgs_pth, file.replace("txt", "jpg")),
-                    "%sswim_coco/images/train2017/" % saved_coco_pth)
+                    "%s/images/train2017/" % saved_coco_pth)
     for file in valid_ls:
-        shutil.copy(os.path.join(imgs_pth, file.replace("txt", "jpg")), "%sswim_coco/images/val2017/" % saved_coco_pth)
+        shutil.copy(os.path.join(imgs_pth, file.replace("txt", "jpg")), "%s/images/val2017/" % saved_coco_pth)
 
     y2c_val = Yolo2Coco()
     val_instance = y2c_val.to_coco(valid_ls, label_pth, imgs_pth)
-    y2c_val.save_coco_json(val_instance, '%sswim_coco/annotations/instances_val2017.json' % saved_coco_pth)
+    y2c_val.save_coco_json(val_instance, '%s/annotations/instances_val2017.json' % saved_coco_pth)

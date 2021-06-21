@@ -89,7 +89,7 @@ def detect(save_txt=False, save_img=True):
             # Stream results
             if view_img:
                 cv2.imshow(p, im0)
-                cv2.waitKey(1)
+                cv2.waitKey(0)
 
             # Save results (image with detections)
             if save_img:
@@ -119,11 +119,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--cfg', type=str, default='cfg/yolov3-original-1cls-leaky.cfg', help='cfg file path')
     parser.add_argument('--data', type=str, default='data/ceiling/ceiling.data', help='coco.data file path')
-    parser.add_argument('--weights', type=str, default='weights/best.weight', help='path to weights file')
+    parser.add_argument('--weights', type=str, default='weights/basket/test/best.pt', help='path to weights file')
     parser.add_argument('--source', type=str, default='0619050.mp4', help='source')  # input file/folder, 0 for webcam
     parser.add_argument('--output', type=str, default='output', help='output folder')  # output folder
     parser.add_argument('--img-size', type=int, default=416, help='inference size (pixels)')
-    parser.add_argument('--conf-thres', type=float, default=0.5, help='object confidence threshold')
+    parser.add_argument('--conf_thres', type=float, default=0.5, help='object confidence threshold')
     parser.add_argument('--nms-thres', type=float, default=0.5, help='iou threshold for non-maximum suppression')
     parser.add_argument('--fourcc', type=str, default='mp4v', help='output video codec (verify ffmpeg support)')
     parser.add_argument('--half', action='store_true', help='half precision FP16 inference')

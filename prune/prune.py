@@ -105,7 +105,8 @@ if __name__ == '__main__':
             f.write(('%10s' * 9) % ("Time", "Params", "P", "R", "mAP", "F1", "test_GIoU", "test_obj", "test_cls\n"))
             with torch.no_grad():
                 origin_metric = eval_model(model)
-            write_info(model, origin_metric, "origin")
+
+            (model, origin_metric, "origin")
         else:
             f = open(res_file, "a+")
 

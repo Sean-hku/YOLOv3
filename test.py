@@ -12,7 +12,7 @@ def test(cfg,
          weights=None,
          batch_size=16,
          img_size=416,
-         iou_thres=0.5,
+         iou_thres=0.1,
          conf_thres=0.001,
          nms_thres=0.5,
          save_json=False,
@@ -72,14 +72,15 @@ def test(cfg,
 
         # Run model
         inf_out, train_out = model(imgs)  # inference and training outputs
-
+        # print(inf_out)
         # Compute loss
         if hasattr(model, 'hyp'):  # if model has loss hyperparameters
             loss += compute_loss(train_out, targets, model)[1][:3].cpu()  # GIoU, obj, cls
 
         # Run NMS
+        conf_thres = 0.000001
         output = non_max_suppression(inf_out, conf_thres=conf_thres, nms_thres=nms_thres)
-
+        # print(output)
         # Statistics per image
         for si, pred in enumerate(output):
             labels = targets[targets[:, 0] == si, 1:]
@@ -179,10 +180,13 @@ def test(cfg,
 
 
 if __name__ == '__main__':
+    cfg = 'cfg/yolov3-original-1cls-leaky.cfg'
+    data = 'data/ceiling/ceiling.data'
+    weights = '/media/hkuit164/WD20EJRX/yolov3-channel-and-layer-pruning/weights/ceiling_2/best.weights'
     with torch.no_grad():
-        test(opt.cfg,
-             opt.data,
-             opt.weights,
+        test(cfg,
+             data,
+             weights,
              opt.batch_size,
              opt.img_size,
              opt.iou_thres,

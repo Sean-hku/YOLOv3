@@ -476,5 +476,5 @@ def layer_wise_time(layer,time,T):
         T['yolo']+=time
 
 if __name__ == '__main__':
-    convert(cfg='/media/hkuit164/WD20EJRX/result/best_finetune/rgb/SLIM-prune_0.95_keep_0.1/prune_0.95_keep_0.1.cfg',
-            weights='/media/hkuit164/WD20EJRX/result/best_finetune/rgb/SLIM-prune_0.95_keep_0.1/best.pt')
+    convert(cfg='/media/hkuit164/MB155_4/4.9/5/yolov3-original-1cls-leaky.cfg',
+            weights='/media/hkuit164/MB155_4/4.9/15/last.pt')

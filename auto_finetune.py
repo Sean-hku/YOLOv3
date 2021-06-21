@@ -1,5 +1,5 @@
 import os
-
+import shutil
 from prune.config import data, batch_size, epoch, ms
 from prune.config import finetune_folders as folders
 
@@ -18,13 +18,14 @@ for folder in folders:
         else:
             continue
     # wdir = os.path.join(wdir_tmp,model.split('/')[-2])
-    # shutil.copy(cfg, os.path.join("distillation", wdir))
+    # shutil.copy(cfg, os.path.join("finetune", wdir))
     assert cfg != "" and model != "", "Missing file in {}! (cfg or weight missed)".format(folder)
-    cmds.append("CUDA_VISIBLE_DEVICES=3 python train_finetune.py --wdir finetune/{} --cfg {} --weights {} --data {} --epochs {} --batch-size {} "
+    cmds.append("CUDA_VISIBLE_DEVICES=3 python train.py --finetune --optimize adam --expFolder {} --cfg {} --weights {} --data {} --epochs {} --batch-size {} "
                 "--multi-scale {}".format(wdir, cfg, model, data, epoch, batch_size, ms))
 
 for cmd in cmds:
     cmd = cmd.replace("--multi-scale False", "")
     cmd = cmd.replace("--multi-scale True", "--multi-scale")
+    # print(cmd)
     os.system(cmd)
     # print(cmd)
